@@ -1,0 +1,6 @@
+*.log
+saved_targets.txt
+whitelist.txt
+nicknames.txt
+hostnames.txt
+scan_history.txt
