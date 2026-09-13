@@ -2,42 +2,21 @@
 
 **Made by Pakun**
 
-Hydra-class Kali menu. Private repo.
+Hydra-class Kali menu. `sudo ATC` after one apt install.
 
-## Install (`apt`)
+## Install
 
 ```bash
-git clone git@github.com:brazyqueso/ATC.git
-cd ATC
-sudo bash install.sh
+wget -O /tmp/atc.deb https://github.com/brazyqueso/ATC/releases/download/v1.0.1/atc_1.0.1_all.deb
+sudo apt install --reinstall /tmp/atc.deb
+sudo ATC
 ```
 
-`install.sh` copies the package into a local apt repo and then runs:
+Uninstall:
 
 ```bash
-sudo apt install atc
-```
-
-After that, on **that same machine**, you can also:
-
-```bash
-sudo apt install atc
 sudo apt remove atc
 sudo apt purge atc
-```
-
-Or skip the helper and install the `.deb` directly:
-
-```bash
-sudo apt install ./apt/atc_1.0.1_all.deb
-```
-
-GitHub CLI:
-
-```bash
-gh repo clone brazyqueso/ATC
-cd ATC
-sudo apt install ./apt/atc_1.0.1_all.deb
 ```
 
 ## Launch
@@ -47,6 +26,28 @@ sudo ATC
 ```
 
 Also: **Applications → ATC**
+
+Pick the interface with **(default route)** — not `wlan0mon` — then option **1** to scan.
+
+## Other install paths
+
+From a clone:
+
+```bash
+git clone https://github.com/brazyqueso/ATC.git
+cd ATC
+sudo apt install ./apt/atc_1.0.1_all.deb
+sudo ATC
+```
+
+or register a local apt source then `sudo apt install atc`:
+
+```bash
+git clone https://github.com/brazyqueso/ATC.git
+cd ATC
+sudo bash install.sh
+sudo ATC
+```
 
 ```
 github.com/brazyqueso
