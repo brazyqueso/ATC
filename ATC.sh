@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 ###############################################
 # ATC — Advanced Target Control
-# Made by Pakun
+# Made by Pakun & iinze0
 # github.com/brazyqueso
 # github.com/brazyqueso/ATC
 # Authorized lab / pentest use only
 ###############################################
 set -o pipefail
 
-ATC_VER="1.0.1"
-ATC_AUTHOR="Pakun"
+ATC_VER="1.0.2"
+ATC_AUTHOR="Pakun & iinze0"
 ATC_GH="https://github.com/brazyqueso"
 ATC_REPO="https://github.com/brazyqueso/ATC"
 
@@ -464,7 +464,7 @@ log_action "Started IFACE=$IFACE MY_IP=$MY_IP"
 ###############################################
 while true; do
     clear
-    echo -e "${GREEN}${BOLD}  ATC${NC}  ${YELLOW}by Pakun${NC}  ${CYAN}v${ATC_VER}${NC}"
+    echo -e "${GREEN}${BOLD}  ATC${NC}  ${YELLOW}by Pakun \& iinze0${NC}  ${CYAN}v${ATC_VER}${NC}"
     echo -e "  IFACE ${GREEN}$IFACE${NC}  ME ${GREEN}${MY_IP:-?}${NC}  GW ${GREEN}$GATEWAY${NC}"
     echo -e "  Devices ${GREEN}${#SCANNED[@]}${NC}  Attack ${PURPLE}$CURRENT_ATTACK${NC}"
     [[ -n $TARGET ]] && { echo -n "  Target "; display_device "$TARGET"; }

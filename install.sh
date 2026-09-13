@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ATC — Made by Pakun
+# ATC — Made by Pakun & iinze0
 # Adds a local apt source, then:  sudo apt install atc
 set -euo pipefail
 
@@ -17,7 +17,7 @@ fi
 [[ -n ${src_dir:-} ]] || { echo "Could not find installer directory"; exit 1; }
 
 APTDIR="$src_dir/apt"
-DEB="$APTDIR/atc_1.0.1_all.deb"
+DEB="$APTDIR/atc_1.0.2_all.deb"
 [[ -f $DEB ]] || { echo "Missing $DEB — clone the full repo"; exit 1; }
 
 export DEBIAN_FRONTEND=noninteractive
@@ -44,7 +44,7 @@ apt-get update -o Dir::Etc::sourcelist=/etc/apt/sources.list.d/atc.list -o Dir::
 apt-get install -y atc
 
 echo
-echo "ATC installed via apt. Made by Pakun"
+echo "ATC installed via apt. Made by Pakun & iinze0"
 echo "  sudo ATC"
 echo "  sudo apt remove atc     # uninstall"
 echo "  sudo apt purge atc      # uninstall + leftover config"

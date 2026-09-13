@@ -1,13 +1,13 @@
 # ATC — Advanced Target Control
 
-**Made by Pakun**
+**Made by Pakun & iinze0**
 
 Hydra-class Kali menu. `sudo ATC` after one apt install.
 
 ## Install
 
 ```bash
-wget -O /tmp/atc.deb https://github.com/brazyqueso/ATC/releases/download/v1.0.1/atc_1.0.1_all.deb
+wget -O /tmp/atc.deb https://github.com/brazyqueso/ATC/releases/download/v1.0.2/atc_1.0.2_all.deb
 sudo apt install --reinstall /tmp/atc.deb
 sudo ATC
 ```
@@ -36,7 +36,7 @@ From a clone:
 ```bash
 git clone https://github.com/brazyqueso/ATC.git
 cd ATC
-sudo apt install ./apt/atc_1.0.1_all.deb
+sudo apt install ./apt/atc_1.0.2_all.deb
 sudo ATC
 ```
 
