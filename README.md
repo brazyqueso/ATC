@@ -29,7 +29,7 @@ sudo apt purge atc
 Or skip the helper and install the `.deb` directly:
 
 ```bash
-sudo apt install ./apt/atc_1.0.0_all.deb
+sudo apt install ./apt/atc_1.0.1_all.deb
 ```
 
 GitHub CLI:
@@ -37,7 +37,7 @@ GitHub CLI:
 ```bash
 gh repo clone brazyqueso/ATC
 cd ATC
-sudo apt install ./apt/atc_1.0.0_all.deb
+sudo apt install ./apt/atc_1.0.1_all.deb
 ```
 
 ## Launch

@@ -8,7 +8,7 @@
 ###############################################
 set -o pipefail
 
-ATC_VER="1.0.0"
+ATC_VER="1.0.1"
 ATC_AUTHOR="Pakun"
 ATC_GH="https://github.com/brazyqueso"
 ATC_REPO="https://github.com/brazyqueso/ATC"
@@ -37,6 +37,171 @@ GATEWAY=""; MY_IP=""; CURRENT_ATTACK="None"
 
 declare -A NICKS
 declare -A HOSTNAMES
+declare -A MACS
+
+need() {
+    if ! have "$1"; then
+        echo -e "${RED}[!] $1 not installed${NC}"
+        return 1
+    fi
+}
+
+lan_cidr() {
+    ip -4 -o addr show dev "$IFACE" 2>/dev/null | awk '{print $4}' | head -n1
+}
+
+remember_ip() {
+    local ip="$1" host="$2" mac="$3"
+    valid_ip "$ip" || return
+    [[ "$ip" == "0.0.0.0" || "$ip" == "255.255.255.255" ]] && return
+    [[ ! " ${SCANNED[*]} " =~ " $ip " ]] && SCANNED+=("$ip")
+    if [[ -n $host && $host != "$ip" && $host != "*" && $host != "-" ]]; then
+        host="${host%.}"
+        HOSTNAMES["$ip"]="$host"
+    fi
+    if [[ -n $mac && $mac != *Incomplete* ]]; then
+        MACS["$ip"]="$mac"
+    fi
+}
+
+resolve_name() {
+    local ip="$1" n=""
+    [[ -n ${HOSTNAMES[$ip]} ]] && return
+    n=$(getent hosts "$ip" 2>/dev/null | awk '{print $2; exit}')
+    if [[ -z $n ]]; then
+        n=$(timeout 1 host "$ip" 2>/dev/null | awk '/pointer/{gsub(/\.$/,"",$NF); print $NF; exit}')
+    fi
+    if [[ -z $n ]] && have avahi-resolve; then
+        n=$(timeout 1 avahi-resolve -a "$ip" 2>/dev/null | awk '{print $2; exit}')
+    fi
+    [[ -n $n && $n != "$ip" ]] && HOSTNAMES["$ip"]="$n"
+}
+
+ingest_ips_from_text() {
+    local text="$1" ip
+    while read -r ip; do
+        remember_ip "$ip"
+    done < <(echo "$text" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | sort -u)
+}
+
+scan_from_kernel() {
+    local ip mac
+    while read -r ip _ _ mac _; do
+        [[ $ip == IP ]] && continue
+        remember_ip "$ip" "" "$mac"
+    done < /proc/net/arp
+    while read -r ip _ _ mac rest; do
+        remember_ip "$ip" "" "$mac"
+    done < <(ip -4 neigh show dev "$IFACE" 2>/dev/null)
+}
+
+scan_from_nmap() {
+    have nmap || return
+    local cidr; cidr=$(lan_cidr)
+    [[ -n $cidr ]] || return
+    echo -e "  ${CYAN}nmap ping sweep $cidr${NC}"
+    local out
+    out=$(nmap -sn -n -T4 --max-retries 1 --host-timeout 2s -e "$IFACE" "$cidr" 2>"$ATC_HOME/scan_nmap.err")
+    local ip="" mac="" host=""
+    while IFS= read -r line; do
+        if [[ $line =~ Nmap\ scan\ report\ for\ ([^[:space:]]+)\ \(([0-9.]+)\) ]]; then
+            host="${BASH_REMATCH[1]}"; ip="${BASH_REMATCH[2]}"
+            remember_ip "$ip" "$host"
+        elif [[ $line =~ Nmap\ scan\ report\ for\ ([0-9.]+) ]]; then
+            ip="${BASH_REMATCH[1]}"; host=""
+            remember_ip "$ip"
+        elif [[ $line =~ MAC\ Address:\ ([0-9A-Fa-f:]{17})\ \((.*)\) ]]; then
+            mac="${BASH_REMATCH[1]}"
+            remember_ip "$ip" "" "$mac"
+        fi
+    done <<< "$out"
+}
+
+scan_from_arpscan() {
+    have arp-scan || return
+    echo -e "  ${CYAN}arp-scan --localnet${NC}"
+    local line ip mac vend
+    while IFS=$'\t' read -r ip mac vend; do
+        valid_ip "$ip" || continue
+        remember_ip "$ip" "" "$mac"
+        [[ -n $vend && -z ${HOSTNAMES[$ip]} ]] && HOSTNAMES["$ip"]="$vend"
+    done < <(arp-scan --interface "$IFACE" --localnet --plain --quiet 2>"$ATC_HOME/scan_arp.err" || \
+             arp-scan --interface "$IFACE" --localnet 2>"$ATC_HOME/scan_arp.err")
+}
+
+scan_from_ping() {
+    local cidr prefix
+    cidr=$(lan_cidr)
+    [[ $cidr == */* ]] || return
+    prefix="${cidr%.*}"
+    prefix="${prefix%.*}"
+    # only cheap /24-/16 last-octet sweep for typical home LAN
+    local base
+    base=$(echo "$MY_IP" | awk -F. '{print $1"."$2"."$3}')
+    [[ -n $base && -n $MY_IP ]] || return
+    echo -e "  ${CYAN}ping sweep ${base}.0/24${NC}"
+    local i
+    for i in $(seq 1 254); do
+        ping -c 1 -W 1 -I "$IFACE" "${base}.$i" >/dev/null 2>&1 &
+        # cap jobs
+        if (( i % 40 == 0 )); then wait; fi
+    done
+    wait
+    scan_from_kernel
+}
+
+scan_from_bettercap() {
+    have bettercap || return
+    echo -e "  ${CYAN}bettercap net.probe${NC}"
+    stop_bettercap
+    local result
+    result=$(timeout 18 bettercap -no-colors -iface "$IFACE" -eval \
+        "set net.probe.throttle 8; net.probe on; sleep 8; net.show; quit" 2>"$ATC_HOME/scan_bettercap.err") || true
+    ingest_ips_from_text "$result"
+    local line ip host
+    while IFS= read -r line; do
+        ip=$(echo "$line" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
+        valid_ip "$ip" || continue
+        host=$(echo "$line" | awk '{print $NF}' | sed 's/│//g;s/┃//g' | xargs)
+        [[ $host == *"─"* || $host == "$ip" || -z $host ]] && host=""
+        remember_ip "$ip" "$host"
+    done <<< "$result"
+}
+
+run_full_scan() {
+    echo -e "${GREEN}[+] LAN scan on ${BOLD}$IFACE${NC}"
+    local cidr; cidr=$(lan_cidr)
+    if [[ -z $MY_IP || -z $cidr ]]; then
+        echo -e "${RED}[!] $IFACE has no IPv4. Pick a managed interface (not wlan0mon).${NC}"
+        echo -e "${YELLOW}    ip -4 addr show $IFACE${NC}"
+        ip -4 addr show "$IFACE" 2>/dev/null || true
+        return 1
+    fi
+    echo -e "  me ${GREEN}$MY_IP${NC}  cidr ${GREEN}$cidr${NC}  gw ${GREEN}$GATEWAY${NC}"
+    local before=${#SCANNED[@]}
+    scan_from_kernel
+    scan_from_nmap
+    scan_from_arpscan
+    scan_from_bettercap
+    scan_from_kernel
+    if [[ ${#SCANNED[@]} -le 2 ]]; then
+        echo -e "${YELLOW}[!] Few hosts — running ping sweep${NC}"
+        scan_from_ping
+    fi
+    local ip
+    for ip in "${SCANNED[@]}"; do resolve_name "$ip"; done
+    echo
+    echo -e "${YELLOW}Devices (${#SCANNED[@]}):${NC}"
+    for ip in "${SCANNED[@]}"; do
+        echo -ne "  "
+        display_device "$ip"
+        [[ -n ${MACS[$ip]} ]] && echo -e "       ${PURPLE}${MACS[$ip]}${NC}"
+    done
+    echo -e "${GREEN}[+] scan done  (was $before, now ${#SCANNED[@]})${NC}"
+    log_action "scan iface=$IFACE found=${#SCANNED[@]}"
+    save_all
+}
+
 
 show_banner() {
     [[ -t 1 ]] || return 0
@@ -95,20 +260,13 @@ pause() { read -p "Press Enter..."; }
 
 have() { command -v "$1" &>/dev/null; }
 
-need() {
-    if ! have "$1"; then
-        echo -e "${RED}[!] $1 not installed${NC}"
-        return 1
-    fi
-}
-
 ###############################################
 # Dependencies
 ###############################################
 check_dependencies() {
     echo -e "${CYAN}${BOLD}Checking core dependencies...${NC}"
     local missing=()
-    for tool in bettercap iptables ip nmap tshark; do
+    for tool in nmap arp-scan ip iptables; do
         if have "$tool"; then echo -e "  ${GREEN}[+] $tool${NC}"
         else echo -e "  ${RED}[-] $tool${NC}"; missing+=("$tool"); fi
     done
@@ -260,37 +418,46 @@ show_banner
 echo -e "${CYAN}  ${ATC_GH}   made by ${ATC_AUTHOR}${NC}\n"
 
 echo -e "${YELLOW}Interfaces:${NC}"
+DEF_IFACE=$(ip route | awk '/default/ {print $5; exit}')
 mapfile -t IFACES < <(ip -o link show | awk -F': ' '{print $2}' | grep -v lo)
 for i in "${!IFACES[@]}"; do
     iface="${IFACES[$i]}"
-    if [[ $iface == wlan* || $iface == wl* || $iface == *mon ]]; then
-        echo -e "  $((i+1))) ${GREEN}$iface${NC} ${YELLOW}(Wireless)${NC}"
+    extra=""
+    [[ $iface == "$DEF_IFACE" ]] && extra=" ${GREEN}(default route)${NC}"
+    if [[ $iface == *mon ]]; then
+        echo -e "  $((i+1))) ${RED}$iface${NC} ${YELLOW}(monitor — LAN scan will fail)${NC}$extra"
+    elif [[ $iface == wlan* || $iface == wl* ]]; then
+        echo -e "  $((i+1))) ${GREEN}$iface${NC} ${YELLOW}(Wireless)${NC}$extra"
     else
-        echo -e "  $((i+1))) $iface"
+        echo -e "  $((i+1))) $iface$extra"
     fi
 done
 echo "  m) Manual"
+echo "  [Enter] = default route ($DEF_IFACE)"
 read -p "Choice: " choice
 if [[ $choice == m || $choice == M ]]; then
     read -p "Interface: " IFACE
 elif [[ $choice =~ ^[0-9]+$ ]] && ((choice>=1 && choice<=${#IFACES[@]})); then
     IFACE="${IFACES[$((choice-1))]}"
 else
-    IFACE="eth0"
+    IFACE="${DEF_IFACE:-eth0}"
 fi
 [[ -z $IFACE ]] && exit 1
 
-if [[ $IFACE == wlan* || $IFACE == wl* ]] && [[ $IFACE != *mon ]]; then
-    if confirm "Enable monitor mode on $IFACE?"; then
-        have airmon-ng && airmon-ng check kill && airmon-ng start "$IFACE"
-        [[ $(ip link show | grep -c "${IFACE}mon") -gt 0 ]] && IFACE="${IFACE}mon"
-    fi
+if [[ $IFACE == *mon ]]; then
+    echo -e "${YELLOW}[!] Monitor mode has no IPv4. LAN scan needs managed mode (wlan0 / eth0).${NC}"
+    sleep 1.5
 fi
 
 GATEWAY=$(ip route | grep default | awk '{print $3}' | head -n1)
 MY_IP=$(ip -4 addr show "$IFACE" 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1)
+if [[ -z $MY_IP ]]; then
+    echo -e "${RED}[!] No IPv4 on $IFACE — scan will be empty until you pick a live NIC.${NC}"
+    sleep 1.2
+fi
 [[ -n $MY_IP ]] && ! is_protected "$MY_IP" && WHITELIST+=("$MY_IP")
 log_action "Started IFACE=$IFACE MY_IP=$MY_IP"
+
 
 ###############################################
 # Menu
@@ -304,7 +471,7 @@ while true; do
     [[ ${#TARGETS[@]} -gt 0 ]] && echo -e "  Multi ${TARGETS[*]}"
     echo
     echo -e "${YELLOW}Discovery${NC}"
-    echo "  1) Scan (bettercap+names)   2) arp-scan   3) netdiscover"
+    echo "  1) Scan LAN (nmap+arp+ping)  2) arp-scan   3) netdiscover"
     echo "  4) Show devices             5) Nickname   6) Quick select"
     echo "  7) Apple targets            8) Nmap"
     echo -e "${YELLOW}Targets${NC}"
@@ -337,20 +504,8 @@ while true; do
 
     case $choice in
         1)
-            echo -e "${GREEN}[+] Scanning...${NC}"
-            stop_bettercap
-            RESULT=$(bettercap -iface "$IFACE" -eval "set net.probe.throttle 5; net.probe on; sleep 13; net.show; quit" 2>/dev/null)
-            while IFS= read -r line; do
-                ip=$(echo "$line" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-                if valid_ip "$ip"; then
-                    host=$(echo "$line" | awk '{print $NF}' | sed 's/│//g' | xargs)
-                    [[ $host == *"─"* || $host == "$ip" || -z $host ]] && host=""
-                    [[ ! " ${SCANNED[*]} " =~ " $ip " ]] && SCANNED+=("$ip")
-                    [[ -n $host ]] && HOSTNAMES["$ip"]="$host"
-                    display_device "$ip"
-                fi
-            done <<< "$RESULT"
-            save_all; sleep 2
+            run_full_scan
+            pause
             ;;
         2) have arp-scan && arp-scan --interface "$IFACE" --localnet; pause ;;
         3) have netdiscover && netdiscover -i "$IFACE" ;;
@@ -370,16 +525,23 @@ while true; do
                 else TARGET="$sel"; TARGETS=(); echo -n "Selected "; display_device "$TARGET"; fi
             fi; sleep 1.2 ;;
         7)
-            stop_bettercap
-            RESULT=$(bettercap -iface "$IFACE" -eval "net.probe on; sleep 11; net.show; quit" 2>/dev/null)
+            echo -e "${GREEN}[+] Apple / vendor filter from last scan + live probe${NC}"
+            run_full_scan
             APPLE=()
-            while IFS= read -r line; do
-                echo "$line" | grep -qi apple || continue
-                ip=$(echo "$line" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1)
-                valid_ip "$ip" && ! is_protected "$ip" && APPLE+=("$ip") && display_device "$ip"
-            done <<< "$RESULT"
-            [[ ${#APPLE[@]} -gt 0 ]] && confirm "Target Apple devices?" && TARGETS=("${APPLE[@]}") && TARGET=""
-            sleep 1.5 ;;
+            for ip in "${SCANNED[@]}"; do
+                blob="${HOSTNAMES[$ip]} ${MACS[$ip]}"
+                echo "$blob" | grep -qiE 'apple|iphone|ipad|macbook|airport|icloud' || continue
+                is_protected "$ip" && continue
+                APPLE+=("$ip")
+                display_device "$ip"
+            done
+            if [[ ${#APPLE[@]} -eq 0 ]]; then
+                echo -e "${YELLOW}[!] None matched Apple in names/vendors. Use option 6 to pick manually.${NC}"
+            elif confirm "Target these Apple devices?"; then
+                TARGETS=("${APPLE[@]}"); TARGET=""
+            fi
+            sleep 1.2
+            ;;
         8) check_target && nmap -sV --top-ports 20 "$(get_targets_str)"; pause ;;
         9)
             read -p "Target IP: " TARGET
