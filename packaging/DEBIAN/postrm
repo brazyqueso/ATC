@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+if [[ "${1:-}" == "purge" ]]; then
+  rm -f /etc/atc_persist.conf /etc/systemd/system/atc-persist.service
+  systemctl daemon-reload 2>/dev/null || true
+fi
+exit 0

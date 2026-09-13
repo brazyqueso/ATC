@@ -1,0 +1,19 @@
+Package: atc
+Version: 1.0.0
+Architecture: all
+Maintainer: Pakun <brazyqueso@users.noreply.github.com>
+Installed-Size: 112
+Depends: bash, iproute2, iptables, curl, ca-certificates
+Recommends: bettercap, nmap, tshark, arp-scan, aircrack-ng
+Filename: ./atc_1.0.0_all.deb
+Size: 8704
+MD5sum: b94242e3797cd79ee19bfd7558a5dcce
+SHA1: 7174d94686ab00dd7e7785febb24ef92ed286214
+SHA256: 2ab2c4712a3ff149110e27ef8542a86bc2a9fb3b6b3347af60c0e0ce83197c3e
+Section: utils
+Priority: optional
+Homepage: https://github.com/brazyqueso/ATC
+Description: ATC — Advanced Target Control (Made by Pakun)
+ Hydra-class Kali menu for authorized lab / pentest work.
+ Launch with: sudo ATC
+

@@ -1,0 +1,7 @@
+Origin: Pakun
+Label: ATC
+Suite: stable
+Codename: kali
+Architectures: all
+Components: main
+Description: ATC apt repo — Made by Pakun
