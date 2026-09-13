@@ -1,15 +1,15 @@
 Package: atc
-Version: 1.0.2
+Version: 1.0.3
 Architecture: all
 Maintainer: Pakun & iinze0 <brazyqueso@users.noreply.github.com>
-Installed-Size: 120
+Installed-Size: 116
 Depends: bash, iproute2, iptables, curl, ca-certificates
 Recommends: nmap, arp-scan, bettercap, tshark
-Filename: ./atc_1.0.2_all.deb
-Size: 10204
-MD5sum: 8c1d4ede62ab9e166399c1cc36a0b39a
-SHA1: 960b091d2f2504e119abfbf12415e5386bb28389
-SHA256: b82797a799c58a31ea23fec65d24e3fc16a37a1fe1ba4573bf02bfc0f013e4dd
+Filename: ./atc_1.0.3_all.deb
+Size: 10056
+MD5sum: 9951386daec1d82c25c62396e80bbd66
+SHA1: 81d66b1b2bbf98765c6331b68f01d5d0ee4c84b8
+SHA256: af3de3f65689cc33edfd4f55de343dc25ccf412eba420795b6434cd391694c9e
 Section: utils
 Priority: optional
 Homepage: https://github.com/brazyqueso/ATC

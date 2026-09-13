@@ -17,7 +17,7 @@ fi
 [[ -n ${src_dir:-} ]] || { echo "Could not find installer directory"; exit 1; }
 
 APTDIR="$src_dir/apt"
-DEB="$APTDIR/atc_1.0.2_all.deb"
+DEB="$APTDIR/atc_1.0.3_all.deb"
 [[ -f $DEB ]] || { echo "Missing $DEB — clone the full repo"; exit 1; }
 
 export DEBIAN_FRONTEND=noninteractive

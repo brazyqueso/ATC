@@ -8,7 +8,7 @@
 ###############################################
 set -o pipefail
 
-ATC_VER="1.0.2"
+ATC_VER="1.0.3"
 ATC_AUTHOR="Pakun & iinze0"
 ATC_GH="https://github.com/brazyqueso"
 ATC_REPO="https://github.com/brazyqueso/ATC"
@@ -208,35 +208,21 @@ show_banner() {
     printf '%b' "${GREEN}${BOLD}"
     cat <<'EOF'
 
-            /^\/^\
-          _|__|  O|
-  \/     /~     \_/ \
-   \____|__________/  \
-         \_______      \
-                 `\     \                 \
-                   |     |                  \
-                  /      /                    \
-                 /     /                       \\
-               /      /                         \ \
-              /     /                            \  \
-            /     /             _----_            \   \
-           /     /           _-~      ~-_         |   |
-          (      (        _-~    _--_    ~-_     _/   |
-           \      ~-____-~    _-~    ~-_    ~-_-~    /
-             ~-_           _-~          ~-_       _-~
-                ~--______-~                ~-___-~
+     /^\/^\   /^\/^\   /^\/^\
+   _|__|  O|_|__|  O|_|__|  O|
+    /~     \_/     \_/     \_/
+   |_________________________|
+            \_______/
 
-     ___    _____    ____
-    /   \  |_   _|  / ___|
-   / /_\ \   | |   | |
-  / _____ \  | |   | |___
- /_/     \_\ |_|    \____|
+     _  _____  ___
+    /_\|_   _|/ __|
+   / _ \ | | | (__
+  /_/ \_\|_|  \___|
 
-   Advanced Target Control
 EOF
     printf '%b' "${NC}"
-    printf '  %bMade by %s%b\n' "${YELLOW}${BOLD}" "$ATC_AUTHOR" "$NC"
-    printf '  %b%s%b\n' "$CYAN" "$ATC_GH" "$NC"
+    printf '  %bAdvanced Target Control%b\n' "${GREEN}${BOLD}" "$NC"
+    printf '  %bMade by Pakun & iinze0%b\n' "${YELLOW}${BOLD}" "$NC"
     printf '  %b%s%b\n' "$CYAN" "$ATC_REPO" "$NC"
     printf '  %bv%s%b\n\n' "$PURPLE" "$ATC_VER" "$NC"
 }
@@ -415,7 +401,6 @@ check_dependencies
 load_data
 clear
 show_banner
-echo -e "${CYAN}  ${ATC_GH}   made by ${ATC_AUTHOR}${NC}\n"
 
 echo -e "${YELLOW}Interfaces:${NC}"
 DEF_IFACE=$(ip route | awk '/default/ {print $5; exit}')

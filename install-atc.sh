@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ATC installer — Made by Pakun & iinze0
 set -euo pipefail
-VER="${ATC_VER:-1.0.2}"
+VER="${ATC_VER:-1.0.3}"
 URL="https://github.com/brazyqueso/ATC/releases/download/v${VER}/atc_${VER}_all.deb"
 DEB="/tmp/atc_${VER}_all.deb"
 
