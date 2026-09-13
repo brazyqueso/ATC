@@ -2,15 +2,32 @@
 
 **Made by Pakun & iinze0**
 
-Hydra-class Kali menu. `sudo ATC` after one apt install.
+Hydra-class Kali menu. `sudo ATC` after one install.
 
-## Install
+## Install (use this)
+
+`apt install /tmp/atc.deb` often fails on Kali (`_apt` cannot read `/tmp`). Use **dpkg**:
 
 ```bash
 wget -O /tmp/atc.deb https://github.com/brazyqueso/ATC/releases/download/v1.0.2/atc_1.0.2_all.deb
-sudo apt install --reinstall /tmp/atc.deb
+sudo dpkg -i /tmp/atc.deb
 sudo ATC
 ```
+
+One-liner:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/brazyqueso/ATC/main/install-atc.sh | sudo bash
+sudo ATC
+```
+
+Check version after install:
+
+```bash
+dpkg -s atc | grep Version
+```
+
+Should say `1.0.2`.
 
 Uninstall:
 
@@ -36,16 +53,7 @@ From a clone:
 ```bash
 git clone https://github.com/brazyqueso/ATC.git
 cd ATC
-sudo apt install ./apt/atc_1.0.2_all.deb
-sudo ATC
-```
-
-or register a local apt source then `sudo apt install atc`:
-
-```bash
-git clone https://github.com/brazyqueso/ATC.git
-cd ATC
-sudo bash install.sh
+sudo dpkg -i ./apt/atc_1.0.2_all.deb
 sudo ATC
 ```
 
