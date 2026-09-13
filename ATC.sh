@@ -8,7 +8,7 @@
 ###############################################
 set -o pipefail
 
-ATC_VER="1.0.3"
+ATC_VER="1.0.4"
 ATC_AUTHOR="Pakun & iinze0"
 ATC_GH="https://github.com/brazyqueso"
 ATC_REPO="https://github.com/brazyqueso/ATC"
@@ -208,11 +208,16 @@ show_banner() {
     printf '%b' "${GREEN}${BOLD}"
     cat <<'EOF'
 
-     /^\/^\   /^\/^\   /^\/^\
-   _|__|  O|_|__|  O|_|__|  O|
-    /~     \_/     \_/     \_/
-   |_________________________|
-            \_______/
+          _____
+         |     |
+         |_____|
+        __|___|__
+         / o o \
+        |   >   |
+         \_____/
+     .---/     \---.
+    /               \~~
+   ~                 ~~
 
      _  _____  ___
     /_\|_   _|/ __|

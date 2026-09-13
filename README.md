@@ -5,7 +5,7 @@
 ## Install (use dpkg — apt /tmp will fail)
 
 ```bash
-wget -O /tmp/atc.deb https://github.com/brazyqueso/ATC/releases/download/v1.0.3/atc_1.0.3_all.deb
+wget -O /tmp/atc.deb https://github.com/brazyqueso/ATC/releases/download/v1.0.4/atc_1.0.4_all.deb
 sudo dpkg -i /tmp/atc.deb
 sudo ATC
 ```
@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/brazyqueso/ATC/main/install-atc.sh 
 sudo ATC
 ```
 
-You should see **v1.0.3** and **Made by Pakun & iinze0**.
+You should see **v1.0.4**, a snake with a top hat, and **Made by Pakun & iinze0**.
 
 ```bash
 dpkg -s atc | grep Version
