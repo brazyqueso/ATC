@@ -39,5 +39,3 @@ Pick the interface with **(default route)** — not `wlan0mon` — then option *
 github.com/brazyqueso
 github.com/brazyqueso/ATC
 ```
-
-Authorized lab / pentest use only.
